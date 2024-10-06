@@ -1,3 +1,9 @@
+# Ignore Vercel deployment folder
 .vercel
+
+# Ignore environment variable folder (or virtual environment)
 env
-__pycache
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
