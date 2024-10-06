@@ -3,17 +3,18 @@ from pymongo import MongoClient, ASCENDING
 from pydantic import BaseModel
 from datetime import datetime
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware 
 import random
 import string
 import os
 
 app = FastAPI()
+
 # Load environment variables from a .env file
 load_dotenv()
 
 # Access the MongoDB URI from the environment variable
 MONGO_URI = os.getenv("MONGO_URI")
-
 
 # Initialize MongoDB Client
 client = MongoClient(MONGO_URI)
@@ -39,6 +40,15 @@ def create_ttl_index():
 
 # Ensure the TTL index is created at application startup
 create_ttl_index()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins, you can restrict this to specific origins if needed
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 @app.post("/createnote")
 def create_note(note: Note, request: Request):
