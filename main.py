@@ -26,6 +26,7 @@ collection = db['notes']
 # Pydantic model for incoming data (only 'msg' field)
 class Note(BaseModel):
     note: str
+    response_type: str
 
 # Function to generate a random 5-character alphanumeric ID
 def generate_custom_id(length=5):
@@ -64,6 +65,7 @@ def create_note(note: Note, request: Request):
         result = collection.insert_one({
             "_id": custom_id,
             "msg": note.note,
+            "response_type": note.response_type,  # Correctly reference the response_type from the note object
             "createdAt": datetime.utcnow()  # Add timestamp for TTL index
         })
 
