@@ -36,8 +36,8 @@ def generate_custom_id(length=5):
 def create_ttl_index():
     indexes = collection.index_information()
     if 'createdAt_1' not in indexes:
-        # Create the TTL index, expire documents 12 hours after 'createdAt'
-        collection.create_index([('createdAt', ASCENDING)], expireAfterSeconds=43200)  # 12 hours = 43200 seconds
+        # Create the TTL index, expire documents 48 hours after 'createdAt'
+        collection.create_index([('createdAt', ASCENDING)], expireAfterSeconds=172800)  # 48 hours = 172800 seconds
 
 # Ensure the TTL index is created at application startup
 create_ttl_index()
