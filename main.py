@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request,BackgroundTasks
 from pymongo import MongoClient, ASCENDING
 from pydantic import BaseModel
 from datetime import datetime
@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import random
 import string
 import os
-from typing import List, Dict
+from starlette.concurrency import run_in_threadpool
 
 app = FastAPI()
 
@@ -24,6 +24,12 @@ client = MongoClient(MONGO_URI)
 db = client['sharenotesDB']
 collection = db['notes']
 print("Connected to MongoDB")
+try:
+    # Test a basic count operation
+    count = collection.count_documents({})
+    print(f"Document count: {count}")
+except Exception as e:
+    print(f"Error occurred: {str(e)}")
 
 # Pydantic model for incoming data (only 'msg' field)
 class Note(BaseModel):
@@ -93,17 +99,14 @@ def get_note(note_id: str):
 
 
 
-@app.get("/activenotes")
-def get_all_items():
-    try:
-        items = collection.count_documents({})
-        if items:
-            return {"notes_count": items}
-    except Exception as e:
-        return {"error": f"Error occurred: {str(e)}"}
-
-
-    
 @app.get("/")
 def welcome():
-    return {"message": "Welcome to the MongoDB FastAPI app!"}
+    count = collection.count_documents({})
+    return {"message": "Welcome to the MongoDB FastAPI app!",
+            "notes_count": count}
+
+
+
+
+
+
