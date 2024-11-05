@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import random
 import string
 import os
+from typing import List, Dict
 
 app = FastAPI()
 
@@ -22,6 +23,7 @@ client = MongoClient(MONGO_URI)
 # Select the database and collection
 db = client['sharenotesDB']
 collection = db['notes']
+print("Connected to MongoDB")
 
 # Pydantic model for incoming data (only 'msg' field)
 class Note(BaseModel):
@@ -90,6 +92,18 @@ def get_note(note_id: str):
         raise HTTPException(status_code=500, detail=f"Error retrieving note: {str(e)}")
 
 
+
+@app.get("/activenotes")
+def get_all_items():
+    try:
+        items = collection.count_documents({})
+        if items:
+            return {"notes_count": items}
+    except Exception as e:
+        return {"error": f"Error occurred: {str(e)}"}
+
+
+    
 @app.get("/")
 def welcome():
     return {"message": "Welcome to the MongoDB FastAPI app!"}
