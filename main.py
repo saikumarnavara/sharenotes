@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request,BackgroundTasks
+from fastapi import FastAPI, HTTPException, Request
 from pymongo import MongoClient, ASCENDING
 from pydantic import BaseModel
 from datetime import datetime
@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import random
 import string
 import os
-from starlette.concurrency import run_in_threadpool
 
 app = FastAPI()
 
@@ -24,6 +23,7 @@ client = MongoClient(MONGO_URI)
 db = client['sharenotesDB']
 collection = db['notes']
 print("Connected to MongoDB")
+
 try:
     # Test a basic count operation
     count = collection.count_documents({})
@@ -31,7 +31,7 @@ try:
 except Exception as e:
     print(f"Error occurred: {str(e)}")
 
-# Pydantic model for incoming data (only 'msg' field)
+# Pydantic model for incoming data (only 'note' and 'response_type' fields)
 class Note(BaseModel):
     note: str
     response_type: str
@@ -40,15 +40,17 @@ class Note(BaseModel):
 def generate_custom_id(length=5):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-# Create a TTL index on the 'createdAt' field if it doesn't exist
-def create_ttl_index():
+# Drop and recreate the TTL index on the 'createdAt' field
+def recreate_ttl_index():
     indexes = collection.index_information()
-    if 'createdAt_1' not in indexes:
-        # Create the TTL index, expire documents 48 hours after 'createdAt'
-        collection.create_index([('createdAt', ASCENDING)], expireAfterSeconds=172800)  # 48 hours = 172800 seconds
+    if 'createdAt_1' in indexes:
+        # Drop the existing TTL index if it exists
+        collection.drop_index('createdAt_1')
+    # Create the TTL index, expire documents 48 hours after 'createdAt'
+    collection.create_index([('createdAt', ASCENDING)], expireAfterSeconds=172800)  # 48 hours = 172800 seconds
 
-# Ensure the TTL index is created at application startup
-create_ttl_index()
+# Ensure the TTL index is recreated at application startup
+recreate_ttl_index()
 
 # Add CORS middleware
 app.add_middleware(
@@ -84,7 +86,6 @@ def create_note(note: Note, request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating note: {str(e)}")
 
-
 @app.get("/{note_id}")
 def get_note(note_id: str):
     try:
@@ -97,16 +98,7 @@ def get_note(note_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving note: {str(e)}")
 
-
-
 @app.get("/")
 def welcome():
     count = collection.count_documents({})
-    return {"message": "Welcome to the MongoDB FastAPI app!",
-            "notes_count": count}
-
-
-
-
-
-
+    return {"message": "Welcome to the MongoDB FastAPI app!", "notes_count": count}
